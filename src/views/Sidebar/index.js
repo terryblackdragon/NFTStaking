@@ -1,10 +1,11 @@
-import { menuItems } from "../../config";
+import { menuItems, rwtokenContractAddress } from "../../config";
 import SidebarContext from "../../context/SidebarContext";
 import { useContext, useEffect, useState } from "react";
 import { useWeb3React } from "@web3-react/core";
 import { hooks } from "../../connectors/metaMask";
 import { ethers } from "ethers";
-import { stakeContractAddress, stakeABI } from "../../config";
+
+import SAPEABI from "../../abi/SAPE.json";
 
 const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider } =
   hooks;
@@ -65,18 +66,19 @@ function Sidebar() {
   }, [isActivating, isActive])
 
   useEffect(() => {
+    console.log ('reload SAPE')
     async function getOwnedSAPE() {
       if (provider === undefined || accounts === undefined) return;
       if (accounts.length <= 0) return;
 
-      const stakeContract = new ethers.Contract(
-        stakeContractAddress,
-        stakeABI,
+      const rwtokenContract = new ethers.Contract(
+        rwtokenContractAddress,
+        SAPEABI,
         provider.getSigner(0)
       );
 
       const walletAddress = accounts[0];
-      const count = await stakeContract.balanceOf(walletAddress);
+      const count = await rwtokenContract.balanceOf(walletAddress);
 
       console.log ('count', count)
 
@@ -84,7 +86,7 @@ function Sidebar() {
     }
 
     getOwnedSAPE();
-  }, [provider, accounts])
+  }, [provider, accounts, context.reload])
 
   return (
     <div className="bg-zinc-900">

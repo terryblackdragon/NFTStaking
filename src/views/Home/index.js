@@ -1,15 +1,19 @@
 import { ethers } from "ethers";
 import { hooks } from "../../connectors/metaMask";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import NFTCard from "../../components/NFTCard";
-import { nftContractAddress, nftABI, stakeContractAddress, stakeABI } from "../../config";
+import { nftContractAddress, stakeContractAddress } from "../../config";
+import SidebarContext from "../../context/SidebarContext";
 
+import APEABI from "../../abi/APE.json";
+import APEStakingAPI from "../../abi/APEStaking.json";
 
 const { useAccounts, useProvider } = hooks;
 
 function Home() {
   const accounts = useAccounts();
   const provider = useProvider();
+  const sidebarContext = useContext(SidebarContext);
 
   const [nfts, setNfts] = useState([]);
   const [staked, setStaked] = useState([]);
@@ -18,47 +22,39 @@ function Home() {
     if (provider === undefined || accounts === undefined) return;
     if (accounts.length <= 0) return;
 
+    console.log ('reload');
+
     const walletAddress = accounts[0];
 
     const nftContract = new ethers.Contract(
       nftContractAddress,
-      nftABI,
+      APEABI,
       provider.getSigner(0)
     );
 
     const stakeContract = new ethers.Contract(
       stakeContractAddress,
-      stakeABI,
+      APEStakingAPI,
       provider.getSigner(0)
     );
 
     async function getOwnedNfts() {
-      const returnIds = await nftContract.walletOfOwner(walletAddress);
+      const returnIds = await nftContract.tokensOfOwner(walletAddress);
 
       setNfts (returnIds);
     }
 
     async function getStakedNfts() {
-      const allStakedIds = await nftContract.walletOfOwner(stakeContractAddress);
+      const returnIds = await stakeContract.tokensOfOwner(walletAddress);
+
+      console.log (returnIds);
             
-      allStakedIds.map ((id) => {
-        const check = async () => {
-          const owner = await stakeContract.tokenOwner(id);
-          console.log ('owner', owner);
-          console.log ('walletAddress', walletAddress);
-          if (owner == walletAddress) {
-            setStaked([...staked, id])
-          }
-        }
-
-        check();
-      })
-
+      setStaked(returnIds);
     }
     
     getOwnedNfts();
     getStakedNfts();
-  }, [provider, accounts]);
+  }, [provider, accounts, sidebarContext.reload]);
 
   return (
     <div className="bg-white">

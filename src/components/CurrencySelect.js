@@ -16,7 +16,7 @@ function CurrencySelect(props) {
   const handleSelectChange = (event) => {
     setToken(event.target.value);
 
-    props.setToken (event.target.value);
+    props.setToken(event.target.value);
   };
 
   useEffect(() => {
@@ -26,15 +26,20 @@ function CurrencySelect(props) {
           (t) => t.name === token
         ).address;
 
-        const tokenContract = new ethers.Contract(
-          tokenAddress,
-          ERC20ABI,
-          provider
-        );
+        if (tokenAddress == "") {
+          const balance = await provider.getBalance(accounts[0]);
+          setTokenBalance(ethers.formatEther (balance.toString()));
+        } else {
+          const tokenContract = new ethers.Contract(
+            tokenAddress,
+            ERC20ABI,
+            provider
+          );
 
-        await tokenContract.balanceOf(accounts[0]).then((bc) => {
-          setTokenBalance(ethers.formatEther(bc.toString()));
-        });
+          await tokenContract.balanceOf(accounts[0]).then((bc) => {
+            setTokenBalance(ethers.formatEther(bc.toString()));
+          });
+        }
       } else setTokenBalance("--");
     };
 
@@ -46,10 +51,13 @@ function CurrencySelect(props) {
       <select
         style={{
           padding: "5px 10px 5px 10px",
-          margin: "5px",
-          borderRadius: "10px",
+          marginBottom: "5px",
+          borderColor: "black",
+          borderWidth: 1,
+          height: "40px",
         }}
         value={token}
+        disabled={true}
         onChange={handleSelectChange}
       >
         {tokenAddresses.map((token, index) => (
@@ -57,8 +65,15 @@ function CurrencySelect(props) {
         ))}
       </select>
       <input
-        style={{ padding: "5px" }}
-        onChange={(e) => {props.handleTokenDesired(e.target.value)}}
+        style={{
+          padding: "10px",
+          borderColor: "black",
+          borderWidth: 1,
+          height: "40px",
+        }}
+        onChange={(e) => {
+          props.handleTokenDesired(e.target.value);
+        }}
         placeholder={"Max: " + tokenBalance}
       ></input>
     </div>

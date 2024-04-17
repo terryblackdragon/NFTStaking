@@ -1,12 +1,11 @@
 import { ethers } from "ethers";
 import { hooks } from "../connectors/metaMask";
-import { useState, useEffect } from "react";
-import {
-  nftContractAddress,
-  nftABI,
-  stakeContractAddress,
-  stakeABI,
-} from "../config";
+import { useState, useEffect, useContext } from "react";
+import { nftContractAddress, stakeContractAddress } from "../config";
+import SidebarContext from "../context/SidebarContext";
+
+import APEABI from "../abi/APE.json";
+import APEStakingAPI from "../abi/APEStaking.json";
 
 import NoImage from "../image-not-found-vector_.jpg";
 
@@ -19,18 +18,19 @@ export default function NFTCard(props) {
 
   const [itemInfo, setItemInfo] = useState({});
 
+  const sidebarContext = useContext(SidebarContext);
+
   useEffect(() => {
     async function getItemInfo() {
       if (provider === undefined) return;
 
       const nftContract = new ethers.Contract(
         nftContractAddress,
-        nftABI,
+        APEABI,
         provider.getSigner(0)
       );
 
       const tokenUri = await nftContract.tokenURI(props.tokenId);
-
       const uri = tokenUri.replace("ipfs://", "https://ipfs.io/ipfs/");
 
       fetch(uri) // Replace with your API endpoint
@@ -42,6 +42,8 @@ export default function NFTCard(props) {
         })
         .then((data) => {
           // Work with the fetched data
+          if (data.image != undefined)
+            data.image = data.image.replace("ipfs://", "https://ipfs.io/ipfs/");
           setItemInfo(data);
         })
         .catch((error) => {
@@ -51,14 +53,14 @@ export default function NFTCard(props) {
 
       const stakeContract = new ethers.Contract(
         stakeContractAddress,
-        stakeABI,
+        APEStakingAPI,
         provider.getSigner(0)
       );
 
       if (accounts === undefined) return;
 
       const walletAddress = accounts[0];
-      const owner = await stakeContract.tokenOwner(props.tokenId);
+      const owner = await stakeContract.ownerOf(props.tokenId);
 
       setStaked(owner == walletAddress);
     }
@@ -68,40 +70,46 @@ export default function NFTCard(props) {
 
   function handleStakeOrUnstake() {
     async function stakeOrUnstake() {
-      const stakeContract = new ethers.Contract(
-        stakeContractAddress,
-        stakeABI,
-        provider.getSigner(0)
-      );
-
-      const nftContract = new ethers.Contract(
-        nftContractAddress,
-        nftABI,
-        provider.getSigner(0)
-      );
-
-      if (staked) {
-
-        const estimateGas = await stakeContract.unstake.estimateGas(props.tokenId);
-
-        await stakeContract.unstake(props.tokenId,  {
-          gasLimit: estimateGas.toString(),
-        });
-      } else {
-        
-        const approve = await nftContract.setApprovalForAll(
+      try {
+        const stakeContract = new ethers.Contract(
           stakeContractAddress,
-          true
+          APEStakingAPI,
+          provider.getSigner(0)
         );
 
-        const estimateGas = await stakeContract.stake.estimateGas(props.tokenId);
+        const nftContract = new ethers.Contract(
+          nftContractAddress,
+          APEABI,
+          provider.getSigner(0)
+        );
 
-        await stakeContract.stake(props.tokenId,  {
-          gasLimit: estimateGas.toString(),
-        });
-      }
+        if (staked) {
+          const estimateGas = await stakeContract.unstake.estimateGas(
+            props.tokenId
+          );
 
-      setStaked (!staked);
+          await stakeContract.unstake(props.tokenId, {
+            gasLimit: estimateGas.toString(),
+          });
+        } else {
+          const approve = await nftContract.setApprovalForAll(
+            stakeContractAddress,
+            true
+          );
+
+          const estimateGas = await stakeContract.stake.estimateGas(
+            props.tokenId
+          );
+
+          await stakeContract.stake(props.tokenId, {
+            gasLimit: estimateGas.toString(),
+          });
+        }
+
+        setStaked(!staked);
+
+        setTimeout(() => {sidebarContext.handleReload (!sidebarContext.reload)}, 10000);
+      } catch (e) { console.error(e) }
     }
 
     stakeOrUnstake();
