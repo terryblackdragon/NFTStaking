@@ -5,7 +5,7 @@ export const FACTORY_ADDRESS = "0xB7926C0430Afb07AA7DEfDE6DA862aE0Bde767bc";
 
 export const nftContractAddress = "0x3F3d677c0d8E8c3e88407A73aa00110E4c47bCB2";
 export const rwtokenContractAddress =
-  "0x95f55f444dC8C52A4b8f43E3f86fD0c207183217";
+  "0x54D84F19404EE2f02Ed63136B41DfA95E9B12B8A";
 export const stakeContractAddress =
   "0x55bb720ff38cf9CfFe969A877a30D151c844f7Cd";
 
