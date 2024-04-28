@@ -1,12 +1,1 @@
 NFT Staking Example
-
-
-
-
-
-
-
-
-
-
-
